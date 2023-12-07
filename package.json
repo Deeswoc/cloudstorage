@@ -1,7 +1,7 @@
 {
-  "name": "distributed-cloud-storage",
-  "version": "1.0.1",
-  "description": "cloud storage",
+  "name": "cloud-storage",
+  "version": "1.0.0",
+  "description": "cloud storage app",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
