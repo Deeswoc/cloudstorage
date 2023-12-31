@@ -1,17 +1,19 @@
-import logo from './logo.svg';
 import './App.css';
 import './style/output.css'
 import { useForm } from 'react-hook-form';
 import Root from './compoments/root';
-import "bootstrap/dist/css/bootstrap.min.css"
 import SignIn from './compoments/auth/signIn';
 import { auth } from './firebase'
-import { Container, Nav, NavDropdown, Navbar } from 'react-bootstrap';
-import { useState } from 'react';
+import { Button, Container, Nav, NavDropdown, Navbar } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
 import UserProfileImage from './compoments/auth/userProfileImage';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { icon } from '@fortawesome/fontawesome-svg-core/import.macro'
-
+import { ToastContainer, toast } from 'react-toastify';
+import { io } from "socket.io-client";
+import 'react-toastify/dist/ReactToastify.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap/dist/js/bootstrap.min.js';
 
 const MyForm = ({ currentUser }) => {
   const { register, handleSubmit } = useForm();
@@ -44,17 +46,7 @@ const MyForm = ({ currentUser }) => {
     upload.click();
   }
 
-  function updateName(e) {
-    const fileNameDis = document.getElementById('file-name');
-
-    fileNameDis.innerHTML = e.target.value.split('\\').at(-1);
-  }
-
-  const FileController = ({ control, register, name, rules }) => {
-
-  }
-
-  const uploadField = register('upload', {required: true});
+  const uploadField = register('upload', { required: true });
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className='border-2 bg-blue- border-blue-300 flex flex-row'>
@@ -70,9 +62,9 @@ const MyForm = ({ currentUser }) => {
         type="file"
         id="upload"
         className='hidden'
-        
+
         {...uploadField}
-        onChange={(e)=>{
+        onChange={(e) => {
           const fileName = document.getElementById('file-name');
           fileName.innerHTML = e.target.value.split('\\').at(-1);
           uploadField.onChange(e);
@@ -90,7 +82,57 @@ const MyForm = ({ currentUser }) => {
 
 
 function App() {
+  const [socket, setSocket] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const notify = (message) => toast(message);
+  const notifyEvent = (event) => {
+    switch (event.action) {
+      case 'delete': {
+        toast.warn(`${event.fileName} was just deleted!`);
+        break;
+      }
+
+      case 'new': {
+
+      }
+
+      default: {
+        toast.warn("Something weird happened");
+      }
+    }
+  }
+  useEffect(() => {
+
+
+    console.log('bread')
+  }, []);
+
+
+  useEffect(() => {
+
+    if (currentUser) {
+      const newSocketConnction = io("ws://localhost:3000", {
+        transports: ['websocket']
+      });
+      console.log("Listening for messages on channel: ", `event-${currentUser.uid}`);
+      setSocket(newSocketConnction);
+      newSocketConnction.on(`event-${currentUser.uid}`, (event) => {
+        console.log("Uploaded a file");
+        console.log("Event: ", event);
+        notify("A file just got uploaded");
+      });
+
+      newSocketConnction.on(`test`, (message) => {
+        notify(message);
+        console.log("Test message recieved: ", message);
+      })
+    } else {
+      if (socket)
+        socket.disconnect();
+    }
+
+
+  }, [currentUser])
 
   return (
     <div className="App">
@@ -115,9 +157,19 @@ function App() {
             :
             ''
         }
+        <Button onClick={async () => {
+          try {
 
+            let response = await fetch("/test");
+            let data = await response.text();
+            console.log("Data: ", data);
+          } catch (error) {
+            console.log("Error happend", error);
+          }
+        }}>Test</Button>
         <Root currentUser={currentUser} />
       </header>
+      <ToastContainer />
     </div>
   );
 }

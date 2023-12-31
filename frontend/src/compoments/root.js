@@ -6,30 +6,28 @@ import { auth, provider } from '../firebase'
 function Root({ currentUser, setCurrentUser }) {
     const [root, setRoot] = useState({ folder: [] });
 
+    function removeFile(fileID) {
+        setRoot({
+            ...root, folder: root.folder.filter((file) => {
+                return fileID.localeCompare(`${file.dev}${file.ino}`);
+            })
+        })
+    }
+
     useEffect(() => {
         console.log("This is being mounted");
         async function fetchFolder() {
             if (currentUser) {
-
-                const idToken = await auth.currentUser.getIdToken(true);
-                const res = await fetch("http://localhost:3000/files-list", {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${idToken}`
-                    }
-                });
-
-                const files = await res.json();
-                console.log("Folder: ", files)
-                setRoot({ ...root, folder: files })
-            } 
-            else setRoot({folder: null})
+                console.log("Current User: ", currentUser);
+                //  
+            }
+            else setRoot({ folder: null })
         }
 
         fetchFolder();
     }, [currentUser])
 
-    return (<Folder folder={root.folder} />)
+    return (<Folder folder={root.folder} currentUser={currentUser} removeFile={removeFile} />)
 }
 
 export default Root;

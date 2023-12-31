@@ -8,7 +8,7 @@ import SignOutBtn from './signOut';
 
 
 
-function SignIn({setCurrentUser, currentUser}) {
+function SignIn({ setCurrentUser, currentUser }) {
     // useEffect(() => {
     //     var ui = firebaseui.auth.AuthUI.getInstance();
     //     ui.start('#firebaseui-auth-container', {
@@ -38,8 +38,20 @@ function SignIn({setCurrentUser, currentUser}) {
 
 
     function handleClick() {
-        signInWithPopup(auth, provider).then((data) => {
-            setCurrentUser(data.user)
+        signInWithPopup(auth, provider).then(async (data) => {
+            const signInForm = new FormData();
+            const token = await data.user.getIdToken();
+
+            const response = await fetch('/signin', {
+                method: 'POST',
+                body: JSON.stringify({ token, username: "username" }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            console.log("Response: ", response);
+            setCurrentUser(data.user);
+            auth.signOut();
         })
     }
 
