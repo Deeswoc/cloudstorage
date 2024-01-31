@@ -1,0 +1,58 @@
+/* #tooltip, .card-popup-menu {
+    background: #333;
+    color: white;
+    font-weight: bold;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 4px;
+    display: none;
+}
+
+#tooltip[data-show], .card-popup-menu[data-show] {
+    display: block;
+}
+
+#arrow,
+#arrow::before,
+.card-popup-menu-arrow,
+.card-popup-menu-arrow::before {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: inherit;
+}
+
+#arrow, .card-popup-menu-arrow::before {
+    visibility: hidden;
+}
+
+#arrow::before, .card-popup-menu-arrow::before {
+    visibility: visible;
+    content: "";
+    transform: rotate(45deg);
+}
+
+#tooltip[data-popper-placement^="top"], .card-popup-menu[data-popper-placement^="top"]> #arrow {
+    bottom: -4px;
+}
+
+#tooltip[data-popper-placement^="bottom"], .card-popup-menu[data-popper-placement^="bottom"] > #arrow {
+    top: -4px;
+}
+
+#tooltip[data-popper-placement^="left"], .card-popup-menu[data-popper-placement^="left"] > #arrow {
+    right: -4px;
+}
+
+#tooltip[data-popper-placement^="right"], .card-popup-menu[data-popper-placement^="right"] > #arrow {
+    left: -4px;
+} */
+
+.card-popup-menu svg{
+    width: 20px;
+}
+
+.card-popup-menu li {
+    font-size: 22px;
+    
+}

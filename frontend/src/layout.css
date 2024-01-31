@@ -1,0 +1,14 @@
+#layout.welcome {
+    height: calc(100vh - 42.594px - 8px - 8px);
+}
+
+#layout.default {
+    grid-template-columns: 300px 1fr;
+    height: calc(100vh - 42.594px - 8px - 8px);
+}
+
+#layout.default #sidebar {
+    display: flex;
+    flex-direction: column;
+    grid-template-rows: 1fr 200px;
+}

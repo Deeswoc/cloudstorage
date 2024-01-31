@@ -1,8 +1,10 @@
-import {auth} from "../../firebase"
+import { auth } from "../../firebase"
 
-function SignOutBtn(){
-    
-    return <button className="btn btn-primary" onClick={()=>{auth.signOut()}}>Sign Out</button>
+function SignOutBtn({ setCurrentUser }) {
+
+    return <button className="btn btn-primary" onClick={() => {
+        fetch('/logout', { method: 'POST' }).then((res) => { if (res.ok) { setCurrentUser(null) } });
+    }}>Sign Out</button>
 }
 
 export default SignOutBtn;

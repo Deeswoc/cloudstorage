@@ -16,9 +16,11 @@ module.exports = (sequelize, DataTypes) => {
   }
   File.init({
     name: DataTypes.STRING,
-    uid: DataTypes.UUID,
     path: DataTypes.STRING,
-    size: DataTypes.INTEGER
+    size: DataTypes.INTEGER,
+    location: DataTypes.STRING,
+    s3_uid: DataTypes.UUID,
+    s3_etag: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'File',

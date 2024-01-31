@@ -1,25 +1,34 @@
 import { useEffect, useState } from "react";
 import Folder from "./folder";
-import { auth, provider } from '../firebase'
+import './root.css'
 
 
-function Root({ currentUser, setCurrentUser }) {
+function Root({ currentUser, setCurrentUser, setFiles, files, reallocateSpace }) {
     const [root, setRoot] = useState({ folder: [] });
 
     function removeFile(fileID) {
         setRoot({
             ...root, folder: root.folder.filter((file) => {
-                return fileID.localeCompare(`${file.dev}${file.ino}`);
+                return fileID !== file.id;
             })
         })
+
+        setFiles(files.filter((file) => {
+            if(file.id===fileID){
+                reallocateSpace(file.size);
+            }
+            return fileID !== file.id;
+        }))
+
     }
 
     useEffect(() => {
-        console.log("This is being mounted");
         async function fetchFolder() {
             if (currentUser) {
-                console.log("Current User: ", currentUser);
-                //  
+                const res = await fetch("/folders");
+                const folder = await res.json();
+                setRoot({ folder })
+                setFiles(folder);
             }
             else setRoot({ folder: null })
         }
@@ -27,7 +36,12 @@ function Root({ currentUser, setCurrentUser }) {
         fetchFolder();
     }, [currentUser])
 
-    return (<Folder folder={root.folder} currentUser={currentUser} removeFile={removeFile} />)
+    return (
+        <div className="d-block relative">
+
+            <Folder folder={files} currentUser={currentUser} removeFile={removeFile} />
+        </div>
+    )
 }
 
 export default Root;

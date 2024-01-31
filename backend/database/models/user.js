@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       this.hasMany(models.File);
       this.hasMany(models.Folder);
+      this.belongsTo(models.UserTier)
     }
   }
   User.init({
@@ -22,7 +23,9 @@ module.exports = (sequelize, DataTypes) => {
     displayname: DataTypes.STRING,
     firstname: DataTypes.STRING,
     lastname: DataTypes.STRING,
-    email: DataTypes.STRING
+    email: DataTypes.STRING,
+    profile_photo: DataTypes.STRING,
+    used_space: DataTypes.BIGINT,
   }, {
     sequelize,
     modelName: 'User',

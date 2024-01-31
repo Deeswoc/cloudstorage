@@ -19,44 +19,57 @@ function SignIn({ setCurrentUser, currentUser }) {
     //         // Other config options...
     //     });
     // })
-    useEffect(() => {
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setCurrentUser(user);
-                // User is signed in, see docs for a list of available properties
-                // https://firebase.google.com/docs/reference/js/auth.user
-                const uid = user.uid;
-                // ...
-            } else {
-                // User is signed out
-                // ...
-                setCurrentUser(null)
-            }
-        });
+    // useEffect(() => {
+    //     onAuthStateChanged(auth, (user) => {
+    //         if (user) {
+    //             console.log("Setting current user");
+    //             setCurrentUser(user);
+    //             // User is signed in, see docs for a list of available properties
+    //             // https://firebase.google.com/docs/reference/js/auth.user
+    //             const uid = user.uid;
+    //             // ...
+    //         } else {
+    //             // User is signed out
+    //             // ...
+    //             setCurrentUser(null)
+    //         }
+    //     });
 
-    }, [setCurrentUser]);
+    // }, [setCurrentUser]);
 
 
     function handleClick() {
         signInWithPopup(auth, provider).then(async (data) => {
-            const signInForm = new FormData();
             const token = await data.user.getIdToken();
 
-            const response = await fetch('/signin', {
+            const signin = await fetch('/signin', {
                 method: 'POST',
                 body: JSON.stringify({ token, username: "username" }),
                 headers: {
                     "Content-Type": "application/json"
                 }
             });
-            console.log("Response: ", response);
-            setCurrentUser(data.user);
+
+            if (signin.status === 200) {
+                console.log("Signed in successfully");
+                const user_res = await fetch('/profile/info');
+                const user = await user_res.json();
+                console.log(user);
+                setCurrentUser(user);
+                auth.signOut();
+            } else {
+                console.log("Signin unsuccessful");
+                console.log(signin);
+            }
+            console.log(data.user)
             auth.signOut();
+        }).catch((err) => {
+            console.log(err);
         })
     }
 
     return (<div>
-        {currentUser ? <SignOutBtn /> : <button onClick={handleClick} className='btn btn-primary'>Sign In with Google</button>}
+        {currentUser ? <SignOutBtn setCurrentUser={setCurrentUser} /> : <button onClick={handleClick} className='btn btn-primary'>Sign In with Google</button>}
 
     </div>)
 }

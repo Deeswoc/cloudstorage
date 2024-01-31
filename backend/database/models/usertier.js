@@ -3,26 +3,22 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Folder extends Model {
+  class UserTier extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      this.belongsTo(models.Folder);
-      this.hasMany(models.File);
-      this.hasMany(models.Folder);
-      this.belongsTo(models.User);
+      this.hasMany(models.User);
     }
   }
-  Folder.init({
-    uid: DataTypes.UUID,
+  UserTier.init({
     name: DataTypes.STRING,
-    path: DataTypes.STRING
+    space_allotted: DataTypes.BIGINT
   }, {
     sequelize,
-    modelName: 'Folder',
+    modelName: 'UserTier',
   });
-  return Folder;
+  return UserTier;
 };
