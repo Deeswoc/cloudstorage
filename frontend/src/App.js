@@ -28,7 +28,7 @@ const MyForm = ({ currentUser }) => {
       const formData = new FormData();
       formData.append("file", data.upload[0]);
       const req = new XMLHttpRequest();
-      req.open('POST', "/busboy");
+      req.open('POST', "api/files/upload");
 
       req.upload.addEventListener('progress', function (e) {
         const progress = (e.loaded / e.total);
@@ -106,7 +106,7 @@ function App() {
   const filesRef = useRef();
   const notify = (message) => toast.dark(message, { toastId: 34 });
 
-  function reallocateSpace(freedSpace){
+  function reallocateSpace(freedSpace) {
     setSpaceUsed(BigNumber(spaceUsed).minus(BigNumber(freedSpace)));
   }
 
@@ -132,7 +132,7 @@ function App() {
       const isSignedIn = Cookies.get('signed_in');
       if (isSignedIn) {
         try {
-          const res = await fetch("/profile/info");
+          const res = await fetch("api/profile/info");
           const user = await res.json();
           setCurrentUser(user);
           setSpaceUsed(user.used_space);
@@ -143,16 +143,12 @@ function App() {
     })()
   }, []);
 
-
   function addFile(newFile) {
-    setSpaceUsed(BigNumber(currentUser.used_space).plus(BigNumber(newFile.size))  );
+    setSpaceUsed(BigNumber(currentUser.used_space).plus(BigNumber(newFile.size)));
     setFiles([...filesRef.current, newFile]);
   }
 
-
-
   useEffect(() => {
-
     if (currentUser) {
       const newSocketConnction = io("ws://localhost:3000", {
         transports: ['websocket']
@@ -177,7 +173,6 @@ function App() {
 
   return (
     <div className="App">
-
       <header className="App-header">
         <Navbar expand="lg" className="bg-body-tertiary">
           <Container>
@@ -187,20 +182,16 @@ function App() {
         </Navbar>
       </header>
       <main className={`grid ${currentUser ? 'default' : 'welcome flex flex-column items-center align-center content-center'}`} id='layout'>
-
         {
           currentUser ?
             <>
-              <Sidebar currentUser={currentUser} spaceUsed={spaceUsed}/>
-              <Root currentUser={currentUser} files={files} setFiles={setFiles} reallocateSpace={reallocateSpace}/>
+              <Sidebar currentUser={currentUser} spaceUsed={spaceUsed} />
+              <Root currentUser={currentUser} files={files} setFiles={setFiles} reallocateSpace={reallocateSpace} />
             </>
             :
             <HomePage />
         }
-
-
       </main>
-
       <ToastContainer />
     </div>
   );
@@ -208,19 +199,14 @@ function App() {
 
 function Sidebar({ currentUser, spaceUsed }) {
   return (
-
     <div id='sidebar' className='bg-slate-400' style={{ paddingTop: 105 }}>
-
       {
         currentUser ?
           <div className='flex flex-row justify-center'>
             <UserProfileImage imgURL={currentUser.profile_photo} />
           </div>
-
-          :
-          ''
+          : ''
       }
-
 
       {
         currentUser ?
@@ -231,10 +217,10 @@ function Sidebar({ currentUser, spaceUsed }) {
           :
           ''
       }
+
       <hr />
 
       <div className='px-2'>
-
         {
           currentUser ?
             <UsageBar spaceUsed={spaceUsed} totalSpace={currentUser.tier.space_allotted} />
@@ -242,7 +228,6 @@ function Sidebar({ currentUser, spaceUsed }) {
         }
       </div>
     </div>
-
   )
 }
 

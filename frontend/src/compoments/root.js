@@ -25,7 +25,7 @@ function Root({ currentUser, setCurrentUser, setFiles, files, reallocateSpace })
     useEffect(() => {
         async function fetchFolder() {
             if (currentUser) {
-                const res = await fetch("/folders");
+                const res = await fetch("api/folders");
                 const folder = await res.json();
                 setRoot({ folder })
                 setFiles(folder);

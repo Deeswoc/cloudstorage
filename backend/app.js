@@ -1,22 +1,17 @@
 require('dotenv').config();
 const express = require("express");
-const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
-const { initializeApp } = require('firebase-admin/app');
 const admin = require("firebase-admin");
 const { Server } = require("socket.io");
-const multerS3 = require("multer-s3");
 const http = require("http");
 const { User, Folder, File, UserTier } = require("./database/models");
 const passport = require("./auth/passportConfig");
 const session = require('express-session');
 const { Op } = require("sequelize");
 const db = require("./database/models");
-const { v4 } = require('uuid');
 const PgStore = require('connect-pg-simple')(session);
 const pg = require('pg');
-const busboy = require('busboy');
 
 const {
     S3Client,
@@ -27,8 +22,8 @@ const {
     paginateListObjectsV2,
     GetObjectCommand,
     ListObjectsCommand,
-
 } = require("@aws-sdk/client-s3");
+
 
 const pgPool = new pg.Pool({
     host: process.env.DB_HOST,
@@ -49,9 +44,6 @@ const sessConfig = {
 }
 
 const cookieParser = require('cookie-parser');
-const user = require('./database/models/user');
-const { PassThrough } = require('stream');
-const { Upload } = require('@aws-sdk/lib-storage');
 const { store } = require('./services/storage/s3Storage');
 const { default: helmet } = require('helmet');
 const s3 = new S3Client({
@@ -62,6 +54,11 @@ const s3 = new S3Client({
     }
 })
 
+const testRouter = express.Router();
+const profileRouter = express.Router();
+const fileRouter = express.Router();
+const folderRouter = express.Router();
+const authRouter = express.Router();
 
 const BUCKET = process.env.AWS_S3_BUCKET;
 const app = express();
@@ -73,7 +70,6 @@ app.use(session(sessConfig));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(passport.session());
-// app.use(busboy());
 
 const server = http.createServer(app)
 const io = new Server(server);
@@ -82,57 +78,35 @@ const SERVICE_ACCOUNT_KEY = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
 admin.initializeApp({
     credential: admin.credential.cert(SERVICE_ACCOUNT_KEY)
 });
-const STORAGE_DIRECTORY = "./upload/"
+
+const api = express.Router();
+app.use('/api', api);
 
 
-const upload = multer({
-    storage: multerS3({
-        s3,
-        bucket: BUCKET,
-        metadata: async function (req, file, cb) {
-            console.log("File being uploaded: ", file)
-            cb(null, { fieldname: file.fieldname, test: [...Object.keys(file)] })
-        },
-        key: async function (req, file, cb) {
-            if (req.user) {
-                // const tier = await req.user.getUserTier();
-                // if(user.used_space + file.size > tier.space_allotted){
-                //     return cb(new Error('Not Enough Space'), null);
-                // }
-                const file_uid = v4();
-                file.uid = file_uid
-                cb(null, `${req.user.uid}/${file_uid}`);
-            } else {
-                const error = new Error('Unauthorized');
-                cb(error, null);
-            }
-        }
-    })
-});
-function getUserStoragePath(uid) {
-    return path.join(STORAGE_DIRECTORY, uid)
-}
-
-
-app.post("/signin", passport.authenticate('local'), (req, res) => {
+authRouter.post("/signin", passport.authenticate('local'), (req, res) => {
     const { user } = req;
-
     res
         .cookie("name", user.displayname)
         .cookie("signed_in", 1)
         .sendStatus(200);
 })
 
-app.get("/", (req, res) => {
+api.get("/", (req, res) => {
     res.send("Hello World");
 })
 
-app.post("/test", async (req, res) => {
+api.use("/", authRouter);
+api.use("/test", testRouter);
+api.use("/profile", profileRouter);
+api.use("/files", fileRouter);
+api.use("/folders", folderRouter);
+
+testRouter.post("/", async (req, res) => {
     console.log("Request Body: ", req.body)
     res.send("recieved");
 })
 
-app.get("/test", async (req, res) => {
+testRouter.get("/", async (req, res) => {
     try {
         console.log(req.user);
         res.sendStatus(200);
@@ -142,25 +116,7 @@ app.get("/test", async (req, res) => {
     }
 })
 
-app.get("/profile/info", async (req, res) => {
-    if (req.isAuthenticated()) {
-        const { user } = req;
-        const tier = await user.getUserTier();
-        res.send({
-            displayname: user.displayname,
-            profile_photo: user.profile_photo,
-            uid: user.uid,
-            used_space: user.used_space,
-            tier: {
-                name: tier.name,
-                space_allotted: tier.space_allotted
-            }
-        })
-    }
-});
-
-
-app.get("/test/create-bucket/:bucket_name", async (req, res) => {
+testRouter.get("/create-bucket/:bucket_name", async (req, res) => {
 
     let bucketName = req.params.bucket_name;
     let commandInput = {
@@ -178,7 +134,7 @@ app.get("/test/create-bucket/:bucket_name", async (req, res) => {
     }
 })
 
-app.get("/test/create-file/:folder_name/:file_name", async (req, res) => {
+testRouter.get("/test/create-file/:folder_name/:file_name", async (req, res) => {
     let bucketName = "folderjam";
     let foldername = req.params.folder_name;
     let fileName = req.params.file_name;
@@ -199,7 +155,24 @@ app.get("/test/create-file/:folder_name/:file_name", async (req, res) => {
     }
 })
 
-app.post("/logout", (req, res, next) => {
+profileRouter.get("/info", async (req, res) => {
+    if (req.isAuthenticated()) {
+        const { user } = req;
+        const tier = await user.getUserTier();
+        res.send({
+            displayname: user.displayname,
+            profile_photo: user.profile_photo,
+            uid: user.uid,
+            used_space: user.used_space,
+            tier: {
+                name: tier.name,
+                space_allotted: tier.space_allotted
+            }
+        })
+    }
+});
+
+authRouter.post("/logout", (req, res, next) => {
     req.logOut(function (err) {
         if (err) {
             return next(err);
@@ -208,7 +181,7 @@ app.post("/logout", (req, res, next) => {
     })
 })
 
-app.get("/test/create-folder/:folder_name", async (req, res) => {
+testRouter.get("/test/create-folder/:folder_name", async (req, res) => {
     let bucketName = "afsdfojaosdpfasdlslse";
     let foldername = req.params.folder_name;
     let commandInput = {
@@ -227,16 +200,6 @@ app.get("/test/create-folder/:folder_name", async (req, res) => {
     }
 })
 
-function uploadToS3(fileStream, fileName) {
-    const params = {
-        Bucket: 'folderjam',
-        Key: fileName,
-        Body: fileStream,
-    };
-
-    return s3.send(new PutObjectCommand(params));
-}
-
 async function checkSpace(req, res, next) {
     const tier = await req.user.getUserTier();
     const storage = tier.space_allotted;
@@ -251,7 +214,7 @@ async function checkSpace(req, res, next) {
     next();
 }
 
-app.post("/busboy", checkSpace, async (req, res) => {
+fileRouter.post("/upload", checkAuth, checkSpace, async (req, res) => {
     async function uploadDone(up_res, metadata) {
         const { user } = req;
         const folder = await Folder.findOne({
@@ -298,7 +261,7 @@ app.post("/busboy", checkSpace, async (req, res) => {
     store(req, uploadDone);
 });
 
-app.get("/files/:id", async (req, res) => {
+fileRouter.get("/:id", async (req, res) => {
     const { id } = req.params;
     const { user } = req;
     const { download } = req.query;
@@ -346,7 +309,7 @@ app.get("/files/:id", async (req, res) => {
     res.sendStatus(401);
 })
 
-app.delete("/files/:id", async (req, res) => {
+fileRouter.delete("/:id", async (req, res) => {
     const { id } = req.params;
     const { user } = req
     if (user) {
@@ -380,36 +343,22 @@ app.delete("/files/:id", async (req, res) => {
     return res.sendStatus(401);
 })
 
-
-
-app.get("/files-list", (req, res) => {
-    const files_list = [];
-    const destination = getUserStoragePath(req.user.uid);
-    fs.readdir(destination, (err, files) => {
-        console.log(err);
-        files.forEach(file => {
-            files_list.push({ ...fs.statSync(path.join(destination, file)), filename: file });
-        })
-        res.json(files_list);
-    })
-})
-
-app.get("/folders", async (req, res) => {
+folderRouter.get("/", async (req, res) => {
     if (req.isAuthenticated()) {
         try {
             const { user } = req;
             const folder = (await user.getFolders({ where: { path: '/' } }))[0];
             const contents_files = await folder.getFiles();
             const contents_folders = await folder.getFolders();
-            res.send([...contents_files, ...contents_folders]);
+            res.status(200).send([...contents_files, ...contents_folders]);
         } catch (error) {
             console.error(error);
-            res.send(error);
+            res.status(500).send(error);
         }
     }
 })
 
-app.get("/folders/:fpath(*)", async (req, res) => {
+folderRouter.get("/:fpath(*)", async (req, res) => {
     const folderPath = req.query.path;
     const fullFolderPath = path.join(req.user.uid, folderPath || '', '/');
     const input = {
@@ -430,7 +379,7 @@ app.get("/folders/:fpath(*)", async (req, res) => {
 })
 
 
-app.get("/files-list-count", (req, res) => {
+folderRouter.get("/count", (req, res) => {
     fs.readdir(STORAGE_DIRECTORY, (err, files) => {
         res.json({ file_count: files.length });
     })
@@ -445,65 +394,12 @@ function checkAuth(req, res, next) {
     }
 }
 
-app.post("/upload", checkAuth,
-    async (req, res) => {
-        const uid = req.user.uid;
-        const { user } = req;
-        const filename = req.file.originalname;
-        const filenameArr = filename.split('.');
-        const filedir = `/${uid}/${req.body.path || ''}`;
-        const dirname = path.dirname(filedir);
-        const foldername = path.basename(filedir);
-        const folder = await Folder.findOne({
-            where: {
-                name: foldername,
-                path: dirname,
-            }
-        })
+function uploadFile(dependencies){
 
-        const filenameQuery = `${filenameArr[0]}%${('.' + filenameArr[1]) || ''}`;
+    return async (req, res)=>{
 
-        const clashingFiles = await folder.getFiles({
-            where: {
-                name: {
-                    [Op.like]: filenameQuery
-                }
-            }
-        })
-
-        const file = await folder.createFile({
-            name: `${filenameArr[0]}${clashingFiles?.length > 0 ? ` (${clashingFiles.length})` : ''}.${filenameArr[1]}`,
-            path: filedir,
-            location: req.file.location,
-            size: req.file.size,
-            s3_etag: req.file.eTag,
-            s3_uid: req.file.uid,
-        })
-        user.addFile(file);
-        user.used_space = user.used_space + file.size
-        const event = {
-            type: 'file',
-            action: 'new',
-            file: req.file,
-            message: `${req.file.filename} has been uploaded`,
-        }
-        io.sockets.emit(`event-${uid}`, { event });
-        res.send("recieved");
-    })
-
-app.delete("/delete/:filename", (req, res) => {
-    const uid = req.user.uid;
-    const event = {
-        type: 'file',
-        action: 'delete',
-        filename: req.params.filename,
-        message: `${req.query.filename} has been deleted`
     }
-    const userDir = getUserStoragePath(uid);
-    io.sockets.emit(`event-${uid}`, { event });
-    fs.rmSync(path.join(userDir, req.params.filename));
-    res.send('deleted');
-})
+}
 
 const defaultTiers = [
     { name: 'free', space_allotted: 1024 * 1024 * 512 },
