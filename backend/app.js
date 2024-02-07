@@ -73,7 +73,7 @@ app.use(passport.session());
 
 const server = http.createServer(app)
 const io = new Server(server);
-
+const iOnotifications = io.of('/notifications');
 const SERVICE_ACCOUNT_KEY = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 admin.initializeApp({
     credential: admin.credential.cert(SERVICE_ACCOUNT_KEY)
@@ -254,7 +254,7 @@ fileRouter.post("/upload", checkAuth, checkSpace, async (req, res) => {
             message: `${metadata.filename} has been uploaded`,
             file: file
         }
-        io.sockets.emit(`event-${user.uid}`, event);
+        iOnotifications.sockets.emit(`event-${user.uid}`, event);
         res.send("recieved");
     }
 

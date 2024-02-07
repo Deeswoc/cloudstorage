@@ -150,7 +150,7 @@ function App() {
 
   useEffect(() => {
     if (currentUser) {
-      const newSocketConnction = io("ws://localhost:3000", {
+      const newSocketConnction = io("ws://localhost:3000/notfications", {
         transports: ['websocket']
       });
       console.log("Listening for messages on channel: ", `event-${currentUser.uid}`);
@@ -230,7 +230,5 @@ function Sidebar({ currentUser, spaceUsed }) {
     </div>
   )
 }
-
-
 
 export default App;
