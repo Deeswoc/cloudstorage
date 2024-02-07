@@ -23,7 +23,7 @@ function SignIn({ setCurrentUser, currentUser }) {
 
             if (signin.status === 200) {
                 console.log("Signed in successfully");
-                const user_res = await fetch('/profile/info');
+                const user_res = await fetch('api/profile/info');
                 const user = await user_res.json();
                 console.log(user);
                 setCurrentUser(user);
